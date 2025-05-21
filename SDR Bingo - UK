@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDR Bingo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f8f8f8;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      background: orange;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+    }
+    .bingo-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
+      margin: 20px 0;
+    }
+    .cell {
+      background: white;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid #ccc;
+      min-height: 100px;
+      position: relative;
+      cursor: pointer;
+    }
+    .cell.x::after {
+      content: "X";
+      font-size: 48px;
+      color: red;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .cell.win {
+      background-color: #d4edda;
+      border-color: #28a745;
+    }
+    .controls {
+      margin-top: 20px;
+    }
+    button {
+      margin: 0 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .winner {
+      font-size: 20px;
+      font-weight: bold;
+      color: green;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>SDR BINGO</h1>
+  <div class="bingo-grid" id="bingoGrid"></div>
+  <div class="controls">
+    <button onclick="undoMove()">Undo</button>
+    <button onclick="resetGame()">Reset</button>
+  </div>
+  <div id="winnerMessage" class="winner"></div>
+
+  <script>
+    const tasks = [
+      "Book 4 demo’s before EOD", "Each SDR books a demo during the same weekly power hour", "Book a meeting with two companies in one day, one plumbing and heating and one electrical", "Get two referral leads in a week", "Book an outbound meeting with someone using BigChange",
+      "Book an inbound demo within 30 minutes of the lead coming in", "Have 100% conversion rate from created to confirmed in the previous month", "Create and confirm two ‘recycled opportunity’ deals", "Outbound connected call lasts longer than 5 minutes", "Book a demo with a lead that came from a referral",
+      "Create an outbound deal worth more than £800", "Hit full monthly SDR target before the 10th of the new month", "FREE", "Log 150 activities in a day", "All SDR’s hit target",
+      "Book a demo with a prospect using SimPRO", "Record and send 5 loom videos to prospects", "Book and create two outbound deals in one day", "Book and confirm the first demo of the month", "Book 8 demos in a week",
+      "Meeting booked from LinkedIn", "Book an outbound meeting that’s confirmed the same day", "Log 100 activities in a day", "Book 3 demo’s before EOD", "Book an outbound demo with 20+ licenses"
+    ];
+
+    const grid = document.getElementById("bingoGrid");
+    const winnerMessage = document.getElementById("winnerMessage");
+    const cellStates = new Array(25).fill(false);
+    const moveStack = [];
+
+    function renderGrid(highlight = []) {
+      grid.innerHTML = "";
+      tasks.forEach((task, i) => {
+        const cell = document.createElement("div");
+        cell.className = "cell" + (cellStates[i] ? " x" : "") + (highlight.includes(i) ? " win" : "");
+        cell.innerText = task === "FREE" ? "" : task;
+        if (task === "FREE") cell.classList.add("x");
+        cell.onclick = () => toggleCell(i);
+        grid.appendChild(cell);
+      });
+    }
+
+    function toggleCell(index) {
+      if (tasks[index] === "FREE") return;
+      cellStates[index] = !cellStates[index];
+      moveStack.push(index);
+      checkWin();
+    }
+
+    function undoMove() {
+      const last = moveStack.pop();
+      if (last !== undefined) {
+        cellStates[last] = !cellStates[last];
+        checkWin();
+      }
+    }
+
+    function resetGame() {
+      for (let i = 0; i < cellStates.length; i++) {
+        cellStates[i] = tasks[i] === "FREE";
+      }
+      moveStack.length = 0;
+      winnerMessage.innerText = "";
+      renderGrid();
+    }
+
+    function checkWin() {
+      const lines = [];
+
+      // Rows
+      for (let r = 0; r < 5; r++) {
+        lines.push([0,1,2,3,4].map(c => r * 5 + c));
+      }
+      // Columns
+      for (let c = 0; c < 5; c++) {
+        lines.push([0,1,2,3,4].map(r => r * 5 + c));
+      }
+      // Diagonals
+      lines.push([0,6,12,18,24]);
+      lines.push([4,8,12,16,20]);
+
+      for (let line of lines) {
+        for (let i = 0; i <= line.length - 4; i++) {
+          const slice = line.slice(i, i + 4);
+          if (slice.every(idx => cellStates[idx])) {
+            winnerMessage.innerText = "🎉 Bingo! 4 in a row!";
+            renderGrid(slice);
+            return;
+          }
+        }
+      }
+
+      winnerMessage.innerText = "";
+      renderGrid();
+    }
+
+    // Init
+    resetGame();
+  </script>
+</body>
+</html>
